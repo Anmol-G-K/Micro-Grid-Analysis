@@ -1,0 +1,19 @@
+[project]
+name = "micro-grid-proj"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib>=3.10.6",
+    "missingno>=0.5.2",
+    "numpy>=2.3.2",
+    "pandas>=2.3.2",
+    "polars>=1.33.0",
+    "pulp>=3.2.2",
+    "pyarrow>=21.0.0",
+    "scikit-learn>=1.7.1",
+    "scipy>=1.16.1",
+    "seaborn>=0.13.2",
+    "statsmodels>=0.14.5",
+]
