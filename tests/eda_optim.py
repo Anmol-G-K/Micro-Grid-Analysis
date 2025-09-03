@@ -12,8 +12,8 @@ from sklearn.impute import SimpleImputer
 from scipy.stats import zscore
 
 # ---------- Paths ----------
-data_path = Path(__file__).resolve().parent.parent / "data/combined.parquet"  # or .feather
-# data_path = Path(__file__).resolve().parent.parent / "data/combined.feather"  
+data_path = Path(__file__).resolve().parent.parent / "data/cleaned_dataset.parquet"  # or .feather
+# data_path = Path(__file__).resolve().parent.parent / "data/cleaned_dataset.feather"  
 output_dir = Path(__file__).resolve().parent.parent / "plots" / "metadata"
 output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -52,7 +52,7 @@ ts_freq = None
 time_stats = {}
 if ts_col:
     df_ts = df.select([ts_col]).to_pandas().sort_values(ts_col)
-    df_ts[ts_col] = pd.to_datetime(df_ts[ts_col], errors="coerce")
+    df_ts[ts_col] = pd.to_datetime(df_ts[ts_col], format="%Y/%m/%d %H:%M:%S")
     df_ts = df_ts.dropna(subset=[ts_col])
     if len(df_ts) > 1:
         df_ts["diff"] = df_ts[ts_col].diff().dt.total_seconds() / 3600.0  # hours
@@ -117,7 +117,7 @@ for c in cat_cols:
 # ---------- 8) Time-series summaries per numeric column ----------
 if ts_col:
     df_pandas = df.to_pandas()
-    df_pandas[ts_col] = pd.to_datetime(df_pandas[ts_col], errors="coerce")
+    df_pandas[ts_col] = pd.to_datetime(df_pandas[ts_col], format="%Y/%m/%d %H:%M:%S")
     df_pandas = df_pandas.set_index(ts_col)
     for col in num_cols:
         s = df_pandas[col].dropna()
