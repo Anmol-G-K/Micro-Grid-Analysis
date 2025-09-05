@@ -173,13 +173,13 @@ def run_soc_simulation(sim_df: pd.DataFrame, label: str):
     with open(summary_path, "w") as f:
         json.dump(summary, f, indent=2)
 
-    # Save small previews
-    sim_df[["battery_active_power_clipped", "pvpcs_active_power", "ge_active_power", "soc_pct"]].iloc[:10].to_csv(
-        OUTPUT_DIR / f"soc_preview_{label}_first10.csv"
-    )
-    sim_df[["battery_active_power_clipped", "pvpcs_active_power", "ge_active_power", "soc_pct"]].iloc[-10:].to_csv(
-        OUTPUT_DIR / f"soc_preview_{label}_last10.csv"
-    )
+    # # Save small previews
+    # sim_df[["battery_active_power_clipped", "pvpcs_active_power", "ge_active_power", "soc_pct"]].iloc[:10].to_csv(
+    #     OUTPUT_DIR / f"soc_preview_{label}_first10.csv"
+    # )
+    # sim_df[["battery_active_power_clipped", "pvpcs_active_power", "ge_active_power", "soc_pct"]].iloc[-10:].to_csv(
+    #     OUTPUT_DIR / f"soc_preview_{label}_last10.csv"
+    # )
 
     print(f"✔ {label} results saved.")
 
