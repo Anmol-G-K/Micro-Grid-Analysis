@@ -36,7 +36,7 @@ warnings.filterwarnings('ignore')
 # =========================
 # CONFIGURATION
 # =========================
-DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "cleaned_dataset.parquet"
+DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "cleaned_power_dataset.parquet"
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "plots" / "corr_lag"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -48,15 +48,46 @@ ROLLING_WINDOW_SIZE = ROLLING_WINDOW_DAYS * 24 * 6  # Assuming 10-minute interva
 
 # Target columns (using actual column names from the dataset)
 TARGET_COLS = [
-    "GE_Active_Power",        # Load
-    "PVPCS_Active_Power",     # PV
-    "Battery_Active_Power"    # Battery
+    "battery_active_power",
+    "battery_active_power_set_response",
+    "pvpcs_active_power",
+    "ge_body_active_power",
+    "ge_active_power",
+    "ge_body_active_power_set_response",
+    "fc_active_power_fc_end_set",
+    "fc_active_power",
+    "fc_active_power_fc_end_set_response",
+    "island_mode_mccb_active_power",
+    "mg-lv-msb_ac_voltage",
+    "receiving_point_ac_voltage",
+    "island_mode_mccb_ac_voltage",
+    "island_mode_mccb_frequency",
+    "mg-lv-msb_frequency",
 ]
 
+
 CROSS_CORR_PAIRS = [
-    ("PVPCS_Active_Power", "GE_Active_Power"),      # PV vs Load
-    ("Battery_Active_Power", "GE_Active_Power")     # Battery vs Load
+    ("battery_active_power", "battery_active_power_set_response"), # battery now vs set point 
+    ("ge_body_active_power", "ge_active_power"), # ge specific load vs ge
+    ("ge_body_active_power", "ge_body_active_power_set_response"), # ge specific load vs set point
+    ("fc_active_power", "fc_active_power_fc_end_set"),  #FC vs set
+    ("fc_active_power", "fc_active_power_fc_end_set_response"), # FC vs set?
+
+    ("ge_active_power", "pvpcs_active_power"),      # Load vs PV
+    ("ge_active_power", "battery_active_power"),     # Load vs Battery
+    ("ge_active_power", "fc_active_power") ,         # Load vs FC
+    ("ge_body_active_power", "pvpcs_active_power"),      # Specific Load vs PV
+    ("ge_body_active_power", "battery_active_power")  ,   # Specific Load vs Battery
+    ("ge_body_active_power", "fc_active_power")    ,      # Specific Load vs FC
+    ("island_mode_mccb_active_power", "pvpcs_active_power"),      # Island Mode Power  vs PV
+    ("island_mode_mccb_active_power", "battery_active_power") ,    # Island Mode Power vs Battery
+    ("island_mode_mccb_active_power", "fc_active_power"),     # Island Mode Power vs FC
+    ("island_mode_mccb_active_power", "ge_active_power")  ,   # Island Mode Power vs ge power
+    ("island_mode_mccb_active_power", "ge_body_active_power"),     # Island Mode Power vs ge specific power
+    ("ge_active_power", "ge_body_active_power")      # Load vs Specific Load?
+
 ]
+
 
 # =========================
 # UTILITY FUNCTIONS
