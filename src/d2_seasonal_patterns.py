@@ -3,7 +3,7 @@ Day 2 - Seasonal & Daily Patterns (Optimized for 70M+ rows)
 
 Efficient temporal pattern extraction for very large datasets:
 - Heatmaps: Day vs Hour for Load and PV
-- Average daily profiles (Load, PV, weekday vs weekend, summer vs winter)
+- Average daily   profiles (Load, PV, weekday vs weekend, summer vs winter)
 - Distribution plots (Load, PV, Battery)
 
 OPTIMIZATION STRATEGIES:
@@ -25,22 +25,25 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import json
 import warnings
-warnings.filterwarnings("ignore")
+# warnings.filterwarnings("ignore")
 
 # =========================
 # CONFIGURATION
 # =========================
-DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "cleaned_dataset.parquet"
-OUTPUT_DIR = Path(__file__).resolve().parent.parent / "plots" / "patterns"
+DATA_PATH = Path(_file_).resolve().parent.parent / "data" / "cleaned_power_dataset.parquet"
+OUTPUT_DIR = Path(_file_).resolve().parent.parent / "plots" / "patterns"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 SUMMARY_FILE = OUTPUT_DIR / "patterns_summary.json"
 
 # Target columns
 TARGET_COLS = [
-    "GE_Active_Power",        # Load
-    "PVPCS_Active_Power",     # PV
-    "Battery_Active_Power"    # Battery
+    "battery_active_power",
+    "pvpcs_active_power",
+    "ge_body_active_power",
+    "ge_active_power",
+    "fc_active_power",
+    "island_mode_mccb_active_power",
 ]
 
 # =========================
@@ -112,8 +115,9 @@ def main():
         if col not in df_pd.columns:
             continue
         pivot = df_pd.pivot_table(values=col, index="date", columns="hour", aggfunc="mean")
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=(18, 8))   # make it wider
         sns.heatmap(pivot, cmap="viridis" if col == "GE_Active_Power" else "inferno")
+        plt.xticks(rotation=45)   # tilt x labels
         plt.title(f"{col} Heatmap (Day vs Hour)")
         plt.xlabel("Hour of Day")
         plt.ylabel("Day")
@@ -126,12 +130,13 @@ def main():
     # =========================
     print("Generating average daily profiles...")
 
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(14, 6))   
     for col in ["GE_Active_Power", "PVPCS_Active_Power"]:
         if col in df_pd.columns:
             df_pd.groupby("hour")[col].mean().plot(label=col, linewidth=2)
     plt.legend()
     plt.title("Average Daily Profiles (All Days)")
+    plt.xticks(np.arange(0, 24, 1))  
     plt.xlabel("Hour of Day")
     plt.ylabel("Power")
     plt.grid(True)
@@ -207,5 +212,5 @@ def main():
     print(f"\n✅ Day 2 analysis complete. Results saved in {OUTPUT_DIR}")
     print(f"Summary file: {SUMMARY_FILE}")
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     main()
