@@ -30,8 +30,8 @@ import warnings
 # =========================
 # CONFIGURATION
 # =========================
-DATA_PATH = Path(_file_).resolve().parent.parent / "data" / "cleaned_power_dataset.parquet"
-OUTPUT_DIR = Path(_file_).resolve().parent.parent / "plots" / "patterns"
+DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "cleaned_power_dataset.parquet"
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / "plots" / "patterns"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 SUMMARY_FILE = OUTPUT_DIR / "patterns_summary.json"
@@ -212,5 +212,5 @@ def main():
     print(f"\n✅ Day 2 analysis complete. Results saved in {OUTPUT_DIR}")
     print(f"Summary file: {SUMMARY_FILE}")
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()
