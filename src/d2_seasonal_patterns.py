@@ -1,3 +1,4 @@
+
 """
 Day 2 - Seasonal & Daily Patterns (Optimized for 70M+ rows)
 
@@ -25,6 +26,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import json
 import warnings
+from datetime import datetime
 # warnings.filterwarnings("ignore")
 
 # =========================
@@ -111,12 +113,12 @@ def main():
     # =========================
     print("Generating heatmaps...")
 
-    for col in ["GE_Active_Power", "PVPCS_Active_Power"]:
+    for col in ["ge_active_power", "pvpcs_active_power"]:
         if col not in df_pd.columns:
             continue
         pivot = df_pd.pivot_table(values=col, index="date", columns="hour", aggfunc="mean")
         plt.figure(figsize=(18, 8))   # make it wider
-        sns.heatmap(pivot, cmap="viridis" if col == "GE_Active_Power" else "inferno")
+        sns.heatmap(pivot, cmap="viridis" if col == "ge_active_power" else "inferno")
         plt.xticks(rotation=45)   # tilt x labels
         plt.title(f"{col} Heatmap (Day vs Hour)")
         plt.xlabel("Hour of Day")
@@ -128,52 +130,59 @@ def main():
     # =========================
     # AVERAGE DAILY PROFILES
     # =========================
-    print("Generating average daily profiles...")
+    print("Generating daily average profiles...")
 
-    plt.figure(figsize=(14, 6))   
-    for col in ["GE_Active_Power", "PVPCS_Active_Power"]:
-        if col in df_pd.columns:
-            df_pd.groupby("hour")[col].mean().plot(label=col, linewidth=2)
-    plt.legend()
-    plt.title("Average Daily Profiles (All Days)")
-    plt.xticks(np.arange(0, 24, 1))  
-    plt.xlabel("Hour of Day")
-    plt.ylabel("Power")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / "avg_daily_profiles.png", dpi=150)
-    plt.close()
+    avg_profile_paths = {}
+    weekday_weekend_paths = {}
+    seasonal_paths = {}
 
-    # Weekday vs Weekend
-    if "GE_Active_Power" in df_pd.columns:
+    for col in available_cols:
+        label = col.replace("_", " ").title()
+
+        # --- Daily average profile
         plt.figure(figsize=(10, 5))
-        df_pd[df_pd["weekday"] < 5].groupby("hour")["GE_Active_Power"].mean().plot(label="Weekday", linewidth=2)
-        df_pd[df_pd["weekday"] >= 5].groupby("hour")["GE_Active_Power"].mean().plot(label="Weekend", linewidth=2)
-        plt.legend()
-        plt.title("Load Profile: Weekday vs Weekend")
+        df_pd.groupby("hour")[col].mean().plot(label=label, linewidth=2)
+        plt.title(f"Average Daily Profile – {label}")
         plt.xlabel("Hour of Day")
         plt.ylabel("Power")
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(OUTPUT_DIR / "weekday_vs_weekend.png", dpi=150)
+        filename = f"avg_daily_{col}.png"
+        plt.savefig(OUTPUT_DIR / filename, dpi=150)
         plt.close()
+        avg_profile_paths[col] = filename
 
-    # Summer vs Winter (example: June–Aug vs Dec–Feb)
-    if "PVPCS_Active_Power" in df_pd.columns:
+        # --- Weekday vs Weekend
+        plt.figure(figsize=(10, 5))
+        df_pd[df_pd["weekday"] < 5].groupby("hour")[col].mean().plot(label="Weekday", linewidth=2)
+        df_pd[df_pd["weekday"] >= 5].groupby("hour")[col].mean().plot(label="Weekend", linewidth=2)
+        plt.title(f"Weekday vs Weekend – {label}")
+        plt.xlabel("Hour of Day")
+        plt.ylabel("Power")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        filename = f"weekday_weekend_{col}.png"
+        plt.savefig(OUTPUT_DIR / filename, dpi=150)
+        plt.close()
+        weekday_weekend_paths[col] = filename
+
+        # --- Summer vs Winter
         plt.figure(figsize=(10, 5))
         summer = df_pd[df_pd["month"].isin([6, 7, 8])]
         winter = df_pd[df_pd["month"].isin([12, 1, 2])]
-        summer.groupby("hour")["PVPCS_Active_Power"].mean().plot(label="Summer", linewidth=2)
-        winter.groupby("hour")["PVPCS_Active_Power"].mean().plot(label="Winter", linewidth=2)
-        plt.legend()
-        plt.title("PV Profile: Summer vs Winter")
+        summer.groupby("hour")[col].mean().plot(label="Summer", linewidth=2)
+        winter.groupby("hour")[col].mean().plot(label="Winter", linewidth=2)
+        plt.title(f"Summer vs Winter – {label}")
         plt.xlabel("Hour of Day")
         plt.ylabel("Power")
+        plt.legend()
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(OUTPUT_DIR / "pv_summer_vs_winter.png", dpi=150)
+        filename = f"summer_winter_{col}.png"
+        plt.savefig(OUTPUT_DIR / filename, dpi=150)
         plt.close()
-
+        seasonal_paths[col] = filename
     # =========================
     # DISTRIBUTION PLOTS
     # =========================
@@ -192,19 +201,37 @@ def main():
     # =========================
     # SUMMARY JSON
     # =========================
+    dataset_size_mb = DATA_PATH.stat().st_size / (1024 ** 2)
     summary = {
+        "timestamp": datetime.now().isoformat(),
         "n_rows": len(df_pd),
         "n_cols": len(df_pd.columns),
         "columns": list(df_pd.columns),
         "time_range": [str(df_pd.index.min()), str(df_pd.index.max())],
+        "dataset_size_mb": round(dataset_size_mb, 2),
+        "missing_percentages": {
+            col: round(df_pd[col].isna().mean() * 100, 2) for col in df_pd.columns
+        },
+        "column_statistics": {
+            col: {
+                "min": float(np.nanmin(df_pd[col])),
+                "max": float(np.nanmax(df_pd[col])),
+                "mean": float(np.nanmean(df_pd[col]))
+            } for col in available_cols
+        },
         "outputs": {
-            "heatmaps": [f"heatmap_{col}.png" for col in ["GE_Active_Power", "PVPCS_Active_Power"] if col in df_pd.columns],
-            "avg_profiles": "avg_daily_profiles.png",
-            "weekday_vs_weekend": "weekday_vs_weekend.png",
-            "summer_vs_winter": "pv_summer_vs_winter.png",
-            "distributions": [f"dist_{col}.png" for col in available_cols],
+            "heatmaps": {
+                col: f"heatmap_{col}.png" for col in ["ge_active_power", "pvpcs_active_power"] if col in available_cols
+            },
+            "average_profiles": avg_profile_paths,
+            "weekday_vs_weekend": weekday_weekend_paths,
+            "summer_vs_winter": seasonal_paths,
+            "distributions": {
+                col: f"dist_{col}.png" for col in available_cols
+            }
         }
     }
+
 
     with open(SUMMARY_FILE, "w") as f:
         json.dump(summary, f, indent=2)
