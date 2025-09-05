@@ -23,12 +23,12 @@ MAD_THRESHOLD = 3.5  # Reduced sensitivity
 
 # Domain-specific cleaning strategies
 CLEANING_STRATEGIES = {
-    "battery_active_power": "remove_extremes_then_interpolate",
-    "battery_active_power_set_response": "remove_extremes_then_interpolate",
+    "battery_active_power": "remove_sentinels_then_interpolate_then_clean",
+    "battery_active_power_set_response": "remove_sentinels_then_interpolate_then_clean",
     "pvpcs_active_power": "remove_extremes_then_interpolate",
     "ge_body_active_power": "remove_extremes_then_interpolate",
     "ge_active_power": "remove_extremes_then_interpolate",
-    "ge_body_active_power_set_response": "remove_extremes_then_interpolate",
+    "ge_body_active_power_set_response": "remove_sentinels_then_interpolate_then_clean",
     "fc_active_power_fc_end_set": "remove_extremes_then_interpolate",
     "fc_active_power": "remove_extremes_then_interpolate",
     "fc_active_power_fc_end_set_response": "remove_extremes_then_interpolate",
@@ -104,17 +104,24 @@ def improved_anomaly_detection(series, method="combined"):
     }
 
 
-def apply_cleaning_strategy(series, anomaly_mask, strategy):
+def apply_cleaning_strategy(series, anomaly_mask, strategy, sentinel_values=[-999999.0]):
     """Apply the appropriate cleaning strategy"""
     if strategy == "keep":
         return series.copy()
+
     elif strategy == "remove":
         cleaned = series.copy()
-        cleaned[anomaly_mask] = np.nan
+        # cleaned[anomaly_mask] = np.nan
+        anomaly_mask_aligned = anomaly_mask.reindex(cleaned.index, fill_value=False)
+        cleaned.loc[anomaly_mask_aligned] = np.nan
         return cleaned
+
     elif strategy == "remove_extremes_then_interpolate":
         cleaned = series.copy()
-        cleaned[anomaly_mask] = np.nan
+        # cleaned[anomaly_mask] = np.nan
+        
+        anomaly_mask_aligned = anomaly_mask.reindex(cleaned.index, fill_value=False)
+        cleaned.loc[anomaly_mask_aligned] = np.nan
 
         # Set datetime index
         if not isinstance(cleaned.index, pd.DatetimeIndex):
@@ -125,13 +132,44 @@ def apply_cleaning_strategy(series, anomaly_mask, strategy):
             cleaned = cleaned.interpolate(method='time')
         else:
             cleaned = cleaned.interpolate(method='linear')
+        
+        return cleaned
+    
+    elif strategy == "remove_sentinels_then_interpolate_then_clean":
+        # 1. Remove sentinel values (replace with NaN)
+        mask_sentinel = series.isin(sentinel_values)
+        cleaned = series.copy()
+        cleaned.loc[mask_sentinel] = np.nan
+        
+        # 2. Interpolate to fill gaps from sentinel removal
+        if not isinstance(cleaned.index, pd.DatetimeIndex):
+            cleaned.index = pd.to_datetime(cleaned.index, errors='coerce')
+        
+        if cleaned.index.is_monotonic_increasing:
+            cleaned = cleaned.interpolate(method='time')
+        else:
+            cleaned = cleaned.interpolate(method='linear')
+        
+        # 3. Now remove anomalies using the provided anomaly_mask (replace with NaN)
+        anomaly_mask_aligned = anomaly_mask.reindex(cleaned.index, fill_value=False)
+        cleaned.loc[anomaly_mask_aligned] = np.nan
+        # cleaned[anomaly_mask] = np.nan
+        
+        # 4. Optionally interpolate again to fill gaps caused by anomalies
+        if cleaned.index.is_monotonic_increasing:
+            cleaned = cleaned.interpolate(method='time')
+        else:
+            cleaned = cleaned.interpolate(method='linear')
 
         return cleaned
 
     elif strategy == "interpolate":
         cleaned = series.copy()
-        cleaned[anomaly_mask] = np.nan   # <-- remove anomalies/sentinels first
+        # cleaned[anomaly_mask] = np.nan   # <-- remove anomalies/sentinels first
+        anomaly_mask_aligned = anomaly_mask.reindex(cleaned.index, fill_value=False)
+        cleaned.loc[anomaly_mask_aligned] = np.nan
         return cleaned.interpolate(method='linear')
+
 
 def create_diagnostic_plots(df, column, anomaly_info, cleaned_series, output_path):
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))

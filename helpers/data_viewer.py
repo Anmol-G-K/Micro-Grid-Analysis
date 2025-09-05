@@ -6,29 +6,28 @@ import time
 
 # Paths
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data"
-# FEATHER_FILE = OUTPUT_DIR / "cleaned_dataset.feather" #feather has issues
-FEATHER_FILE = OUTPUT_DIR / "ccleaned_dataset.feather" #feather has issues
-PARQUET_FILE = OUTPUT_DIR / "cleaned_dataset.parquet"
+PARQUET_FILE = OUTPUT_DIR / "cleaned_power_dataset.parquet"
+FEATHER_FILE = OUTPUT_DIR / "cleaned_power_dataset.feather" 
 
-CHUNK_SIZE = 10000
 
 CHUNK_SIZE = 10000
 
 def load_dataset():
     start = time.time()
 
-    if FEATHER_FILE.exists():
-        st.write(f"Loading from Feather (Polars): `{FEATHER_FILE.name}`")
-        df = pl.read_ipc(FEATHER_FILE)  # or pl.read_feather(FEATHER_FILE) depending on version
-        st.success(f"Loaded FEATHER with shape: {df.shape} in {time.time() - start:.2f} sec.")
-        return "polars_df", df, df.shape[0]
-
-    elif PARQUET_FILE.exists():
+    if PARQUET_FILE.exists():
         st.write(f"Lazy loading from Parquet: `{PARQUET_FILE.name}`")
         lf = pl.scan_parquet(PARQUET_FILE)
         total_rows = lf.select(pl.count()).collect()[0, 0]
         st.success(f"Ready to load PARQUET with {total_rows:,} rows (lazy) in {time.time() - start:.2f} sec.")
         return "polars_lazy", lf, total_rows
+
+    elif FEATHER_FILE.exists():
+        st.write(f"Loading from Feather (Polars): `{FEATHER_FILE.name}`")
+        df = pl.read_ipc(FEATHER_FILE)  # or pl.read_feather(FEATHER_FILE) depending on version
+        st.success(f"Loaded FEATHER with shape: {df.shape} in {time.time() - start:.2f} sec.")
+        return "polars_df", df, df.height
+
 
     else:
         st.warning("No .feather or .parquet file found in the specified path.")
