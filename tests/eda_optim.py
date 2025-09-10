@@ -12,7 +12,8 @@ from sklearn.impute import SimpleImputer
 from scipy.stats import zscore
 
 # ---------- Paths ----------
-data_path = Path(__file__).resolve().parent.parent / "data/cleaned_dataset.parquet"  # or .feather
+data_path = Path(__file__).resolve().parent.parent / "data/combined.parquet"  # or .feather
+# data_path = Path(__file__).resolve().parent.parent / "data/cleaned_dataset.parquet"  # or .feather
 # data_path = Path(__file__).resolve().parent.parent / "data/cleaned_dataset.feather"  
 output_dir = Path(__file__).resolve().parent.parent / "plots" / "metadata"
 output_dir.mkdir(parents=True, exist_ok=True)
@@ -33,8 +34,20 @@ else:
 print(f"Data loaded: {df.shape}")
 
 # ---------- Preprocessing ----------
-ts_col = "Timestamp" if "Timestamp" in df.columns else None
-num_cols = [c for c in df.columns if c != ts_col]
+
+if 'timestamp' in df.columns:
+    df = df.with_columns([
+        pl.col('timestamp').str.strptime(pl.Datetime).alias('timestamp')
+    ])
+ts_col = "timestamp" if "timestamp" in df.columns else None
+
+print("Schema of DataFrame:", df.schema)
+
+print("First rows of 'timestamp' column:")
+print(df.select('timestamp').head()) 
+
+
+num_cols = [c for c, dt in zip(df.columns, df.dtypes) if isinstance(dt, (pl.Float64, pl.Int64))]
 cat_cols = [c for c, dt in zip(df.columns, df.dtypes) if dt in [pl.Categorical, pl.Utf8] and c != ts_col]
 
 # Convert non-timestamp to float and handle sentinel values
@@ -117,7 +130,7 @@ for c in cat_cols:
 # ---------- 8) Time-series summaries per numeric column ----------
 if ts_col:
     df_pandas = df.to_pandas()
-    df_pandas[ts_col] = pd.to_datetime(df_pandas[ts_col], format="%Y/%m/%d %H:%M:%S")
+    df_pandas[ts_col] = pd.to_datetime(df_pandas[ts_col], format="%Y-%m-%d %H:%M:%S")
     df_pandas = df_pandas.set_index(ts_col)
     for col in num_cols:
         s = df_pandas[col].dropna()

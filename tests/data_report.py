@@ -49,7 +49,7 @@ def detect_data_issues(df: pl.DataFrame, ts_col: str = None) -> tuple[dict, list
         datetime_parse_errors = 0
         if ts_col and col == ts_col:
             col_series = df[col].to_pandas()
-            datetime_parse_errors, invalid_timestamps = count_and_extract_invalid_timestamps(col_series, "%Y/%m/%d %H:%M:%S")
+            datetime_parse_errors, invalid_timestamps = count_and_extract_invalid_timestamps(col_series, "%Y-%m-%d %H:%M:%S")
 
         issue_report[col] = {
             "dtype": str(dtype),

@@ -1,4 +1,4 @@
-# issues infered from tests/data_report.py 
+# issues infered from tests/data_report.py mainly date time parsing
 
 import polars as pl
 import pandas as pd

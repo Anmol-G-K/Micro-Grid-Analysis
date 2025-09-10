@@ -40,7 +40,7 @@ data_df = None
 if DATA_PATH.exists():
     try:
         print("Loading dataset from:", DATA_PATH)
-        cols_needed = ["timestamp", "battery_active_power", "pvpcs_active_power", "ge_active_power"]
+        cols_needed = ["timestamp", "battery_active_power", "pvpcs_active_power", "ge_active_power", "island_mode_mccb_active_power"]
 
         if use_polars:
             # LazyFrame for scalability
@@ -185,46 +185,46 @@ def run_soc_simulation(sim_df: pd.DataFrame, label: str):
 
 
 
+if __name__ == "__main__":
+    # ----- Choose 1-month slice -----
+    if MODE == "A":
+        # ---- Option A: use entire dataset ----
+        sim_df = data_df.copy()
+        label = "full_dataset"
+        print("\n▶ Running SoC simulation on entire dataset...")
 
-# ----- Choose 1-month slice -----
-if MODE == "A":
-    # ---- Option A: use entire dataset ----
-    sim_df = data_df.copy()
-    label = "full_dataset"
-    print("\n▶ Running SoC simulation on entire dataset...")
-
-    OUTPUT_DIR = Path(__file__).resolve().parent.parent / "plots" / "soc_sim" / "entire_dataset"
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    
-    run_soc_simulation(sim_df, label)
-
-elif MODE == "B":
-    # ---- Option B: run month by month ----
-    months = [
-        "Apr_2023", "Aug_2022", "Dec_2022", "Feb_2023", "Jan_2023", 
-        "Jul_2022", "Jul_2023", "Jun_2022", "Jun_2023", "Mar_2023", 
-        "May_2022", "May_2023", "Nov_2022", "Oct_2022", "Sep_2022"
-    ]
-
-    for month in months:
-        # Parse month into datetime
-        dt = pd.to_datetime(month, format="%b_%Y")
-        slice_start = dt.replace(day=1)
-        slice_end = (slice_start + pd.offsets.MonthEnd(1))
-
-        sim_df = data_df.loc[slice_start:slice_end].copy()
-        label = month
-
-        print(f"\n▶ Running SoC simulation for {month} ({slice_start.date()} → {slice_end.date()})")
-        OUTPUT_DIR = Path(__file__).resolve().parent.parent / "plots" / "soc_sim" / "monthly"
+        OUTPUT_DIR = Path(__file__).resolve().parent.parent / "plots" / "soc_sim" / "entire_dataset"
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-        # --- call a helper function (see Step 3) to run simulation + save results ---
+        
         run_soc_simulation(sim_df, label)
 
-    print("\n✅ Monthly simulations completed. Files saved in:", OUTPUT_DIR)
-    exit(0)  # stop here, we don’t run the rest again
+    elif MODE == "B":
+        # ---- Option B: run month by month ----
+        months = [
+            "Apr_2023", "Aug_2022", "Dec_2022", "Feb_2023", "Jan_2023", 
+            "Jul_2022", "Jul_2023", "Jun_2022", "Jun_2023", "Mar_2023", 
+            "May_2022", "May_2023", "Nov_2022", "Oct_2022", "Sep_2022"
+        ]
 
-else:
-    raise ValueError("Invalid MODE. Use 'A' or 'B'.")
+        for month in months:
+            # Parse month into datetime
+            dt = pd.to_datetime(month, format="%b_%Y")
+            slice_start = dt.replace(day=1)
+            slice_end = (slice_start + pd.offsets.MonthEnd(1))
+
+            sim_df = data_df.loc[slice_start:slice_end].copy()
+            label = month
+
+            print(f"\n▶ Running SoC simulation for {month} ({slice_start.date()} → {slice_end.date()})")
+            OUTPUT_DIR = Path(__file__).resolve().parent.parent / "plots" / "soc_sim" / "monthly"
+            OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+            # --- call a helper function (see Step 3) to run simulation + save results ---
+            run_soc_simulation(sim_df, label)
+
+        print("\n✅ Monthly simulations completed. Files saved in:", OUTPUT_DIR)
+        exit(0)  # stop here, we don’t run the rest again
+
+    else:
+        raise ValueError("Invalid MODE. Use 'A' or 'B'.")
 

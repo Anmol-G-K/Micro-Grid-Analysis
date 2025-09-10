@@ -6,8 +6,10 @@ import time
 
 # Paths
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data"
-PARQUET_FILE = OUTPUT_DIR / "cleaned_power_dataset.parquet"
-FEATHER_FILE = OUTPUT_DIR / "cleaned_power_dataset.feather" 
+# PARQUET_FILE = OUTPUT_DIR / "cleaned_power_dataset.parquet"
+# FEATHER_FILE = OUTPUT_DIR / "cleaned_power_dataset.feather" 
+PARQUET_FILE = OUTPUT_DIR / "combined.parquet"
+FEATHER_FILE = OUTPUT_DIR / "combined.feather" 
 
 
 CHUNK_SIZE = 10000
